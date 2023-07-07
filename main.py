@@ -68,10 +68,22 @@ async def wait_for_partner_handler(message: types.Message):
             text=f"Ты сейчас связан с {user.name}! Напиши что-нибудь."
         )
         await OurStates.messaging.set()
+        # Собеседнику также задать состояние messaging
+        partner_state = dp.get_current().current_state(chat=chosen, user=chosen)
+        await partner_state.set_state(OurStates.messaging)
     else:
         await message.answer(
             text="Пока никого нет, кто был бы свободен. Подожди немного."
         )
+
+
+@dp.message_handler(...)
+async def send_message(message: types.Message):
+    user_id = message.from_id
+    user = ...
+    partner_id = user.partner_id
+    text = f"{...}: {message.text}"
+    await bot.send_message(chat_id=partner_id, text=text)
 
 
 if __name__ == '__main__':
