@@ -1,4 +1,4 @@
-__all__ = ['OurStates']
+__all__ = ["OurStates"]
 
 from aiogram.dispatcher.filters.state import State, StatesGroup
 
