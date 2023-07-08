@@ -55,9 +55,11 @@ async def enter_name_handler(message: types.Message):
 @dp.message_handler(
     Text(equals=("да", "yes"), ignore_case=True),
     # будет работать только если текст сообщения равен "да" или "yes"
-    state=OurStates.yes_or_no  # будет работать только в состоянии yes_or_no
+    state=OurStates.yes_or_no,  # будет работать только в состоянии yes_or_no
 )  # Обработчик для ответа "да"
-async def wait_for_partner_handler(message: types.Message, ):
+async def wait_for_partner_handler(
+    message: types.Message,
+):
     await OurStates.wait_for_partner.set()  # Установка состояния wait_for_partner
 
     user = user_mapping[message.from_id]
@@ -67,9 +69,15 @@ async def wait_for_partner_handler(message: types.Message, ):
     for partner_id, partner_obj in user_mapping.items():
         # Проверка, что пользователь не связан с самим собой
         # и что у партнера нет связи с другим пользователем
-        if partner_id != user.user_id and partner_obj.partner_id is None and partner_obj.name is not None:
+        if (
+            partner_id != user.user_id
+            and partner_obj.partner_id is None
+            and partner_obj.name is not None
+        ):
             # Получение текущего контекста партнера
-            partner_context = dp.get_current().current_state(chat=partner_id, user=partner_id)
+            partner_context = dp.get_current().current_state(
+                chat=partner_id, user=partner_id
+            )
             # Где он находится на графе состояний
             partner_state = await partner_context.get_state()
             # Если он в состоянии "ожидает партнера", то выбираем его
@@ -97,7 +105,9 @@ async def wait_for_partner_handler(message: types.Message, ):
         # Установка состояния messaging для партнера
         # получаем текущее состояние партнера (то, что обычно передается в аргументе state)
         partner_state = dp.get_current().current_state(chat=chosen, user=chosen)
-        await partner_state.set_state(OurStates.messaging)  # Установка состояния messaging для партнера
+        await partner_state.set_state(
+            OurStates.messaging
+        )  # Установка состояния messaging для партнера
     else:
         await message.answer(
             text="Пока никого нет, кто был бы свободен. Подожди немного."
@@ -111,7 +121,80 @@ async def messaging_handler(message: types.Message):
     user = user_mapping[message.from_id]  # Получение объекта пользователя
     partner_id = user.partner_id  # Получение идентификатора партнера
     text = f"{user.name}: {message.text}"  # Формирование текста сообщения
-    await dp.bot.send_message(chat_id=partner_id, text=text)  # Отправка сообщения партнеру
+    await dp.bot.send_message(
+        chat_id=partner_id, text=text
+    )  # Отправка сообщения партнеру
+
+
+@dp.message_handler(
+    content_types=types.ContentType.PHOTO,  # будет работать только если сообщение является фотографией
+    state=OurStates.messaging,  # будет работать только в состоянии messaging
+)  # Обработчик для обмена фотографиями между пользователями
+async def messaging_photo_handler(message: types.Message):
+    user = user_mapping[message.from_id]
+    partner_id = user.partner_id
+
+    # Получение объекта фотографии
+    photo = message.photo[-1]
+
+    new_caption = f"{user.name}: {message.caption}"  # Формирование текста сообщения
+    await dp.bot.send_photo(
+        chat_id=partner_id, photo=photo.file_id, caption=new_caption
+    )  # Отправка фотографии партнеру
+
+
+@dp.message_handler(
+    content_types=types.ContentType.VIDEO,  # будет работать только если сообщение является видео
+    state=OurStates.messaging,  # будет работать только в состоянии messaging
+)
+async def messaging_video_handler(message: types.Message):
+    user = user_mapping[message.from_id]
+    partner_id = user.partner_id
+
+    # Получение объекта видео
+    video = message.video
+
+    new_caption = f"{user.name}: {message.caption}"  # Формирование текста сообщения
+    await dp.bot.send_video(
+        chat_id=partner_id, video=video.file_id, caption=new_caption
+    )  # Отправка видео партнеру
+
+
+@dp.message_handler(
+    content_types=types.ContentType.STICKER,  # будет работать только если сообщение является стикером
+    state=OurStates.messaging,  # будет работать только в состоянии messaging
+)
+async def messaging_sticker_handler(message: types.Message):
+    user = user_mapping[message.from_id]
+    partner_id = user.partner_id
+
+    # Получение объекта стикера
+    sticker = message.sticker
+
+    new_caption = f"{user.name}:"  # Формирование подписи с именем отправителя
+    await dp.bot.send_message(
+        chat_id=partner_id, text=new_caption
+    )  # Отправка подписи партнеру
+    await dp.bot.send_sticker(
+        chat_id=partner_id, sticker=sticker.file_id
+    )  # Отправка стикера партнеру с подписью
+
+
+@dp.message_handler(
+    content_types=types.ContentType.AUDIO,  # будет работать только если сообщение является аудио
+    state=OurStates.messaging,  # будет работать только в состоянии messaging
+)
+async def messaging_audio_handler(message: types.Message):
+    user = user_mapping[message.from_id]
+    partner_id = user.partner_id
+
+    # Получение объекта аудио
+    audio = message.audio
+
+    new_caption = f"{user.name}: {message.caption}"  # Формирование текста сообщения
+    await dp.bot.send_audio(
+        chat_id=partner_id, audio=audio.file_id, caption=new_caption
+    )  # Отправка аудио партнеру
 
 
 if __name__ == "__main__":
