@@ -1,8 +1,10 @@
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher.filters import Text
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 
 from config import TOKEN
+from buttons import greeting_kb
 from states import OurStates
 from user_class import User
 
@@ -48,18 +50,22 @@ async def enter_name_handler(message: types.Message):
 
     text = f"Отлично, {user.name}! Сейчас я попробую найти тебе пару."
     await message.answer(text=text)
-    await message.answer(text="Ты готов? Напиши 'да', если да, и 'нет', если нет.")
+
+    await message.answer(text="Ты готов? Нажми на кнопку!",
+                         reply_markup=greeting_kb)
     await OurStates.yes_or_no.set()  # Установка состояния yes_or_no
 
 
 @dp.message_handler(
-    Text(equals=("да", "yes"), ignore_case=True),
+    Text(equals="👋 Познакомиться", ignore_case=True),
     # будет работать только если текст сообщения равен "да" или "yes"
     state=OurStates.yes_or_no,  # будет работать только в состоянии yes_or_no
 )  # Обработчик для ответа "да"
 async def wait_for_partner_handler(
     message: types.Message,
 ):
+    await message.answer("Сейчас попробуем тебе найти партнёра...",
+                         reply_markup=ReplyKeyboardRemove())
     await OurStates.wait_for_partner.set()  # Установка состояния wait_for_partner
 
     user = user_mapping[message.from_id]
