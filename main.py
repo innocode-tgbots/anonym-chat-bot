@@ -1,10 +1,10 @@
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher.filters import Text
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
+from aiogram.types import ReplyKeyboardRemove
 
+from buttons import greeting_kb, greeting_callback_data
 from config import TOKEN
-from buttons import greeting_kb
 from states import OurStates
 from user_class import User
 
@@ -56,19 +56,26 @@ async def enter_name_handler(message: types.Message):
     await OurStates.yes_or_no.set()  # Установка состояния yes_or_no
 
 
-@dp.message_handler(
-    Text(equals="👋 Познакомиться", ignore_case=True),
-    # будет работать только если текст сообщения равен "да" или "yes"
-    state=OurStates.yes_or_no,  # будет работать только в состоянии yes_or_no
-)  # Обработчик для ответа "да"
+@dp.callback_query_handler(greeting_callback_data.filter(),
+                           state=OurStates.yes_or_no)
+# @dp.message_handler(
+#     Text(equals="👋 Познакомиться", ignore_case=True),
+#     # будет работать только если текст сообщения равен "да" или "yes"
+#     state=OurStates.yes_or_no,  # будет работать только в состоянии yes_or_no
+# )  # Обработчик для ответа "да"
 async def wait_for_partner_handler(
-    message: types.Message,
+    call: types.CallbackQuery,
 ):
-    await message.answer("Сейчас попробуем тебе найти партнёра...",
-                         reply_markup=ReplyKeyboardRemove())
+    message = call.message  # Получение объекта сообщения под которым расположена кнопка
+    user_id = call.from_user.id
+    user = user_mapping[user_id]
+
+    await bot.answer_callback_query(call.id)  # Ответ на нажатие кнопки, чтобы кнопка не подсвечивалась(была отжата)
+
+    await message.reply("Сейчас попробуем тебе найти партнёра...",
+                        reply_markup=ReplyKeyboardRemove())
     await OurStates.wait_for_partner.set()  # Установка состояния wait_for_partner
 
-    user = user_mapping[message.from_id]
     chosen = None  # Переменная для хранения идентификатора партнера
 
     # Поиск свободного партнера среди пользователей в словаре
