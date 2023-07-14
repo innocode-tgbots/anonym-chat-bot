@@ -26,3 +26,5 @@ skip_bt_inline = InlineKeyboardButton(
     text="🔎 Найти другого собеседника", callback_data=skip_callback_data.new()
 )
 skip_kb_inline.add(skip_bt_inline)
+
+# SOME UPDATES
